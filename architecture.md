@@ -33,7 +33,7 @@ The MVP should:
 - Require minimal infrastructure management
 - Be fully deployed using Terraform
 - Support only Portuguese initially
-- Support only Google social login
+- Support Cognito username/password login
 - Focus on South American routes
 - Avoid permanent report persistence
 - Generate temporary reports stored in S3
@@ -94,14 +94,14 @@ Responsibilities:
 Technology:
 
 - AWS Cognito
-- Google Social Login
+- Cognito username/password authentication
 
 Authentication flow:
 
 1. User accesses frontend
-2. Cognito Hosted UI handles login
-3. Google OAuth authentication
-4. Cognito returns JWT token
+2. Cognito Hosted UI handles username/password login
+3. Cognito authenticates the user
+4. Cognito returns a JWT token
 5. Frontend stores token securely
 6. Backend validates JWT
 7. Backend validates user email allowlist
@@ -143,7 +143,7 @@ AWS Services:
 ### Authentication Layer
 
 - Cognito User Pool
-- Cognito Identity Provider (Google)
+- Cognito native username/password provider
 - Cognito Hosted UI
 
 ### API Layer

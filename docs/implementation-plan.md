@@ -29,11 +29,12 @@ Acceptance checks:
 
 ## Stage 3: Authentication
 
-Goal: integrate Cognito Hosted UI with Google login and backend JWT validation.
+Goal: integrate Cognito Hosted UI username/password login and backend JWT
+validation.
 
 Acceptance checks:
 
-- Cognito user pool and Google identity provider are provisioned
+- Cognito user pool and web client are provisioned
 - Backend validates Cognito JWTs
 - Backend checks the authorized users table by email
 - Unauthorized users receive `403`

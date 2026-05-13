@@ -1,7 +1,6 @@
 locals {
-  name_prefix          = "routeiq-click-${var.environment}"
-  lambda_zip           = "${path.module}/../build/lambda.zip"
-  google_oauth_enabled = length(trimspace(var.google_client_id)) > 0 && length(trimspace(var.google_client_secret)) > 0
+  name_prefix = "routeiq-click-${var.environment}"
+  lambda_zip  = "${path.module}/../build/lambda.zip"
 }
 
 resource "aws_s3_bucket" "frontend" {
@@ -68,30 +67,20 @@ resource "aws_cognito_user_pool" "auth" {
     allow_admin_create_user_only = false
   }
 
+  password_policy {
+    minimum_length                   = 8
+    require_lowercase                = true
+    require_numbers                  = true
+    require_symbols                  = false
+    require_uppercase                = true
+    temporary_password_validity_days = 7
+  }
+
   schema {
     name                = "email"
     attribute_data_type = "String"
     mutable             = true
     required            = true
-  }
-}
-
-resource "aws_cognito_identity_provider" "google" {
-  count = local.google_oauth_enabled ? 1 : 0
-
-  user_pool_id  = aws_cognito_user_pool.auth.id
-  provider_name = "Google"
-  provider_type = "Google"
-
-  provider_details = {
-    client_id        = var.google_client_id
-    client_secret    = var.google_client_secret
-    authorize_scopes = "email openid profile"
-  }
-
-  attribute_mapping = {
-    email    = "email"
-    username = "sub"
   }
 }
 
@@ -105,15 +94,11 @@ resource "aws_cognito_user_pool_client" "web" {
   callback_urls                        = var.cognito_callback_urls
   logout_urls                          = var.cognito_logout_urls
   prevent_user_existence_errors        = "ENABLED"
-  supported_identity_providers         = concat(["COGNITO"], local.google_oauth_enabled ? ["Google"] : [])
+  supported_identity_providers         = ["COGNITO"]
 
   explicit_auth_flows = [
     "ALLOW_REFRESH_TOKEN_AUTH",
     "ALLOW_USER_SRP_AUTH",
-  ]
-
-  depends_on = [
-    aws_cognito_identity_provider.google,
   ]
 }
 

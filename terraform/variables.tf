@@ -16,19 +16,6 @@ variable "environment" {
   default     = "prod"
 }
 
-variable "google_client_id" {
-  description = "Google OAuth client ID for Cognito social login. Leave empty until configured."
-  type        = string
-  default     = ""
-}
-
-variable "google_client_secret" {
-  description = "Google OAuth client secret for Cognito social login. Leave empty until configured."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "cognito_callback_urls" {
   description = "Allowed callback URLs for Cognito Hosted UI."
   type        = list(string)

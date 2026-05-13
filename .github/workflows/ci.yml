@@ -28,8 +28,6 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_KEY }}
       AWS_DEFAULT_REGION: us-east-1
-      TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
-      TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     defaults:
       run:
         working-directory: terraform
@@ -65,8 +63,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_KEY }}
       AWS_DEFAULT_REGION: us-east-1
       TF_STATE_BUCKET: routeiq-click-tfstate-prod
-      TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
-      TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
     defaults:
       run:
         working-directory: terraform

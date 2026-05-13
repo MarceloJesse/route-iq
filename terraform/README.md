@@ -32,9 +32,3 @@ The workflow reads AWS credentials from repository secrets:
 
 - `ACCESS_KEY`
 - `SECRET_KEY`
-
-Google OAuth for Cognito Hosted UI is enabled when these optional repository
-secrets are present:
-
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
