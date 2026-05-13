@@ -1,6 +1,7 @@
 locals {
-  name_prefix = "routeiq-click-${var.environment}"
-  lambda_zip  = "${path.module}/../build/lambda.zip"
+  name_prefix          = "routeiq-click-${var.environment}"
+  lambda_zip           = "${path.module}/../build/lambda.zip"
+  google_oauth_enabled = length(trimspace(var.google_client_id)) > 0 && length(trimspace(var.google_client_secret)) > 0
 }
 
 resource "aws_s3_bucket" "frontend" {
@@ -55,6 +56,70 @@ resource "aws_dynamodb_table" "authorized_users" {
     name = "email"
     type = "S"
   }
+}
+
+resource "aws_cognito_user_pool" "auth" {
+  name = "${local.name_prefix}-users"
+
+  auto_verified_attributes = ["email"]
+  username_attributes      = ["email"]
+
+  admin_create_user_config {
+    allow_admin_create_user_only = false
+  }
+
+  schema {
+    name                = "email"
+    attribute_data_type = "String"
+    mutable             = true
+    required            = true
+  }
+}
+
+resource "aws_cognito_identity_provider" "google" {
+  count = local.google_oauth_enabled ? 1 : 0
+
+  user_pool_id  = aws_cognito_user_pool.auth.id
+  provider_name = "Google"
+  provider_type = "Google"
+
+  provider_details = {
+    client_id        = var.google_client_id
+    client_secret    = var.google_client_secret
+    authorize_scopes = "email openid profile"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    username = "sub"
+  }
+}
+
+resource "aws_cognito_user_pool_client" "web" {
+  name         = "${local.name_prefix}-web"
+  user_pool_id = aws_cognito_user_pool.auth.id
+
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+  callback_urls                        = var.cognito_callback_urls
+  logout_urls                          = var.cognito_logout_urls
+  prevent_user_existence_errors        = "ENABLED"
+  supported_identity_providers         = concat(["COGNITO"], local.google_oauth_enabled ? ["Google"] : [])
+
+  explicit_auth_flows = [
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+  ]
+
+  depends_on = [
+    aws_cognito_identity_provider.google,
+  ]
+}
+
+resource "aws_cognito_user_pool_domain" "auth" {
+  domain       = local.name_prefix
+  user_pool_id = aws_cognito_user_pool.auth.id
 }
 
 resource "aws_cloudwatch_log_group" "api" {
@@ -120,6 +185,18 @@ resource "aws_apigatewayv2_integration" "api_lambda" {
   payload_format_version = "2.0"
 }
 
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.api.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "${local.name_prefix}-cognito"
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.web.id]
+    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.auth.id}"
+  }
+}
+
 resource "aws_apigatewayv2_route" "health" {
   api_id    = aws_apigatewayv2_api.api.id
   route_key = "GET /health"
@@ -127,9 +204,11 @@ resource "aws_apigatewayv2_route" "health" {
 }
 
 resource "aws_apigatewayv2_route" "analyze_route" {
-  api_id    = aws_apigatewayv2_api.api.id
-  route_key = "POST /api/routes/analyze"
-  target    = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
+  api_id             = aws_apigatewayv2_api.api.id
+  route_key          = "POST /api/routes/analyze"
+  target             = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_stage" "default" {

@@ -22,3 +22,23 @@ output "api_lambda_function_name" {
   description = "Lambda function that serves the FastAPI backend."
   value       = aws_lambda_function.api.function_name
 }
+
+output "cognito_user_pool_id" {
+  description = "Cognito user pool ID."
+  value       = aws_cognito_user_pool.auth.id
+}
+
+output "cognito_web_client_id" {
+  description = "Cognito web app client ID."
+  value       = aws_cognito_user_pool_client.web.id
+}
+
+output "cognito_hosted_ui_base_url" {
+  description = "Cognito Hosted UI base URL."
+  value       = "https://${aws_cognito_user_pool_domain.auth.domain}.auth.${var.aws_region}.amazoncognito.com"
+}
+
+output "google_oauth_enabled" {
+  description = "Whether Google OAuth was configured for Cognito."
+  value       = local.google_oauth_enabled
+}
