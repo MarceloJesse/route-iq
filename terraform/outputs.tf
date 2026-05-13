@@ -12,3 +12,13 @@ output "authorized_users_table_name" {
   description = "DynamoDB table for allowlisted users."
   value       = aws_dynamodb_table.authorized_users.name
 }
+
+output "api_base_url" {
+  description = "HTTP API Gateway base URL for the RouteIQ backend."
+  value       = aws_apigatewayv2_api.api.api_endpoint
+}
+
+output "api_lambda_function_name" {
+  description = "Lambda function that serves the FastAPI backend."
+  value       = aws_lambda_function.api.function_name
+}
