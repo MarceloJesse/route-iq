@@ -103,3 +103,7 @@ jobs:
       - run: terraform init
       - run: terraform plan -out=tfplan
       - run: terraform apply -auto-approve tfplan
+      - name: Smoke test API health
+        run: |
+          api_base_url="$(terraform output -raw api_base_url)"
+          curl --fail --silent --show-error "$api_base_url/health"

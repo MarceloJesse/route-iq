@@ -36,6 +36,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "reports" {
     id     = "expire-temporary-reports"
     status = "Enabled"
 
+    filter {
+      prefix = ""
+    }
+
     expiration {
       days = 1
     }
