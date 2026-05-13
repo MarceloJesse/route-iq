@@ -41,4 +41,5 @@ output "cognito_hosted_ui_base_url" {
 output "google_oauth_enabled" {
   description = "Whether Google OAuth was configured for Cognito."
   value       = local.google_oauth_enabled
+  sensitive   = true
 }
