@@ -21,7 +21,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: PYTHONPATH=. pytest
 
-  terraform:
+  terraform_validate:
     name: Terraform validation
     runs-on: ubuntu-latest
     env:
@@ -37,3 +37,43 @@ jobs:
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
+
+  terraform_apply:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - terraform_validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
+      TF_STATE_BUCKET: routeiq-click-tfstate-prod
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Bootstrap Terraform state bucket
+        working-directory: .
+        run: |
+          if ! aws s3api head-bucket --bucket "$TF_STATE_BUCKET" 2>/dev/null; then
+            aws s3api create-bucket --bucket "$TF_STATE_BUCKET" --region "$AWS_DEFAULT_REGION"
+          fi
+
+          aws s3api put-public-access-block \
+            --bucket "$TF_STATE_BUCKET" \
+            --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+
+          aws s3api put-bucket-versioning \
+            --bucket "$TF_STATE_BUCKET" \
+            --versioning-configuration Status=Enabled
+
+          aws s3api put-bucket-encryption \
+            --bucket "$TF_STATE_BUCKET" \
+            --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+      - run: terraform init
+      - run: terraform plan -out=tfplan
+      - run: terraform apply -auto-approve tfplan
